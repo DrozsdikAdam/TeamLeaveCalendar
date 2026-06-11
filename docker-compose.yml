@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: leave_calendar_db
+    restart: always
+    environment:
+      POSTGRES_USER: "user_admin"
+      POSTGRES_PASSWORD: "secret_password"
+      POSTGRES_DB: "leave_calendar"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/src/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  api:
+    build: ./backend
+    container_name: leave_calendar_api
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      DATABASE_URL: "postgresql://user_admin:secret_password@postgres_db:5432/leave_calendar"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres_db
+
+  frontend:
+    build: ./frontend
+    container_name: leave_calendar_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: "http://localhost:5000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
