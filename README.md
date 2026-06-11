@@ -8,20 +8,27 @@ A responsive web application for managing team leave requests and tracking on-ca
 - **Frontend:** React, Tailwind CSS
 - **Backend:** Node.js, Express
 - **Database:** PostgreSQL
+- **Containerization:** Docker, Docker Compose
+
+## Architecture & Design Patterns
+- **Multi-layered Architecture (N-Tier):** The backend is strictly structured into Routes, Controllers, Services, and Repositories. This guarantees a clean separation of concerns:
+- **Routes:** Map endpoints to controllers.
+- **Controllers:** Handle HTTP requests/responses and API input validation.
+- **Services:** Contain encapsulated domain business logic (e.g., date processing, conflict detection).
+- **Repositories:** Manage raw database abstraction and direct SQL operations.
+- **Component-Driven Frontend:** The React frontend is fully modularized into isolated, reusable presentation and state components (LeaveForm, LeaveTable, OnCallSchedule).
 
 ---
 
 ## How to Run the Application
 
 ### Method 1: Docker Compose (Recommended)
-The easiest way to run the entire stack (Database, API, Frontend) is using Docker Compose:
+The easiest way to run the entire stack (Database, API, Frontend). Run this single command in the project root to clean up any cached volumes and start the app:
 
-1. Make sure you have **Docker** and **Docker Compose** installed.
-2. In the project root directory, run:
-   ```bash
-   docker-compose up --build
-   ```
-3. Once the containers are running:
+```bash
+docker-compose down --volumes --remove-orphans && docker-compose up --build
+```
+ ## Once the containers are running:
    - **Frontend App:** http://localhost:3000
    - **Backend API:** http://localhost:5000
    - **PostgreSQL Database:** localhost:5432
@@ -77,7 +84,13 @@ If you want to run the components manually without Docker:
 ## Design Decisions & Assumptions
 1. **camelCase JavaScript Transition:** The database uses standard `snake_case` naming conventions for PostgreSQL tables and column names (`employee_name`, `start_date`, etc.). The repository layer dynamically maps columns to `camelCase` properties at the query boundary (e.g. `employee_name AS "employeeName"`), allowing the rest of the JavaScript codebase (both frontend and backend) to remain strictly camelCase.
 2. **Stable Dynamic On-Call Rotation:** The application fetches the list of team members dynamically from the database and sorts them by their IDs to produce a stable, predictable rotation cycle.
-3. **Strict Year Range Validation:** Validating standard JavaScript date parsing is not sufficient since inputs with long/weird numbers can produce valid parsed objects. We implemented a backend check restricting leave dates to years between `2000` and `2100`.
+3. **Strict Year Range Validation:** Validating standard JavaScript date parsing is not sufficient since inputs with long/weird numbers can produce valid parsed objects. I implemented a backend check restricting leave dates to years between `2000` and `2100`.
+4. **No "partial" leave:** I assumed that all leave requests are full-day events. The current system and schema do not support hourly or half-day leaves.
+5. **No automatic replacement:** I assumed that when an on-call conflict is detected (the assigned person is on leave), the system only flags a conflict alert but does not automatically swap them for the next available team member. Rotation changes must be resolved manually by management.
+6. **Week Definition (ISO-8601):** I assumed that weeks start on Monday and end on Sunday, and the first week of the year contains at least 4 days of that year. The native JavaScript date calculations follow this behavior.
+7. **Weekly Leave Conflict Rounding:** For on-call conflict checks, I assumed that if a team member is on leave for even a single day during their on-call week, the entire week is flagged as conflicted.
+8. **No Leave Status Management:** I assumed that leave requests are created in "Pending" status by default and can only be transitioned to "Approved" or "Rejected" by an administrator.
+9. **No "Change Team Member" Feature:** I assumed that the list of team members is static and cannot be modified through the interface. Editing team members is not implemented.
 
 ---
 
@@ -211,3 +224,32 @@ All API endpoints expect and return JSON payloads. Date parameters should be for
       }
     ]
     ```
+
+## Future Improvements & Roadmap
+While the core functionality of the application is fully implemented, the codebase was structured to easily accommodate the following production-ready enhancements:
+
+### Transition to Modern ORM (Prisma):
+- Migrate the current raw SQL repository layer to Prisma ORM.
+- This will eliminate manual string queries, introduce compile-time type safety for database models, and abstract away custom column mapping.
+
+### Strict Data Transfer Objects (DTO) & Schema Validation (Zod):
+- Introduce DTOs to govern data payloads crossing the API boundary.
+- Use Zod schemas inside controllers to strictly validate incoming requests, decoupling runtime business logic from raw payload validation and improving API error responses.
+
+### Authentication & Authorization (RBAC):
+- Implement JWT-based authentication (using bcrypt for password hashing).
+- Introduce Role-Based Access Control (RBAC) to differentiate between standard Employees (who can only request leave) and Administrators (who can approve/reject requests and modify schedules).
+
+### Automated On-Call Replacement Logic:
+- Instead of just flag-marking a conflict, implement an intelligent, automated engine that suggests or automatically assigns the next eligible, non-conflicted team member in the rotation when a conflict is detected.
+
+### Advanced Date and Time Management:
+- Migrate native JavaScript date calculations to a dedicated, lightweight library like Date-fns or Luxon to robustly handle complex timezone mutations, daylight saving transitions, and custom corporate holiday calendars.
+
+### Notifications & Third-Party Integrations:
+- Add Email notifications (via Nodemailer/SendGrid) or Slack Webhooks to instantly notify employees when their leave request status changes, or to alert managers about newly filed requests.
+- Sync approved leave requests and on-call schedules directly into external calendars via the Google Calendar API or iCal feeds.
+
+### Adding Tests:
+- Add backend integration tests using Jest and supertest to automatically verify the overlap validation logic.
+- Add frontend component testing using React Testing Library and End-to-End (E2E) testing with Cypress or Playwright.
