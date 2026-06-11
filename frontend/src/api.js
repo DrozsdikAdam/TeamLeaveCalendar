@@ -33,18 +33,20 @@ export const apiClient = {
     return handleResponse(res);
   },
 
-  async approveLeave(id) {
+  async approveLeave(id, comment) {
     const res = await fetch(`${API_URL}/api/leaves/approve/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment })
     });
     return handleResponse(res);
   },
 
-  async rejectLeave(id) {
+  async rejectLeave(id, comment) {
     const res = await fetch(`${API_URL}/api/leaves/reject/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment })
     });
     return handleResponse(res);
   }

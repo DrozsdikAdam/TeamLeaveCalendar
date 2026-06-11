@@ -8,7 +8,8 @@ class LeaveRepository {
                    start_date AS "startDate", 
                    end_date AS "endDate", 
                    reason, 
-                   status 
+                   status,
+                   comment
             FROM leave_requests
         `
         const result = await query(sql)
@@ -21,7 +22,8 @@ class LeaveRepository {
                    start_date AS "startDate", 
                    end_date AS "endDate", 
                    reason, 
-                   status 
+                   status,
+                   comment
             FROM leave_requests 
             WHERE id = $1
         `
@@ -36,7 +38,8 @@ class LeaveRepository {
                    start_date AS "startDate", 
                    end_date AS "endDate", 
                    reason, 
-                   status 
+                   status,
+                   comment
             FROM leave_requests 
             WHERE employee_name = $1 
             AND status IN ('Pending', 'Approved')
@@ -57,7 +60,8 @@ class LeaveRepository {
                    start_date AS "startDate", 
                    end_date AS "endDate", 
                    reason, 
-                   status 
+                   status,
+                   comment
             FROM leave_requests 
             WHERE employee_name != $1 
             AND status IN ('Approved', 'Pending')
@@ -79,39 +83,42 @@ class LeaveRepository {
                       start_date AS "startDate", 
                       end_date AS "endDate", 
                       reason, 
-                      status
+                      status,
+                      comment
         `;
         const result = await query(sql, [leave.employeeName, leave.startDate, leave.endDate, leave.reason]);
         return result.rows[0];
     }
-    async rejectLeave(id) {
+    async rejectLeave(id, comment) {
         const sql = `
             UPDATE leave_requests 
-            SET status = 'Rejected' 
+            SET status = 'Rejected', comment = $2 
             WHERE id = $1 
             RETURNING id, 
                       employee_name AS "employeeName", 
                       start_date AS "startDate", 
                       end_date AS "endDate", 
                       reason, 
-                      status
+                      status,
+                      comment
         `;
-        const result = await query(sql, [id]);
+        const result = await query(sql, [id, comment]);
         return result.rows[0];
     }
-    async approveLeave(id) {
+    async approveLeave(id, comment) {
         const sql = `
             UPDATE leave_requests 
-            SET status = 'Approved' 
+            SET status = 'Approved', comment = $2 
             WHERE id = $1 
             RETURNING id, 
                       employee_name AS "employeeName", 
                       start_date AS "startDate", 
                       end_date AS "endDate", 
                       reason, 
-                      status
+                      status,
+                      comment
         `;
-        const result = await query(sql, [id]);
+        const result = await query(sql, [id, comment]);
         return result.rows[0];
     }
     async updateLeave(id, updateData) {
@@ -127,7 +134,8 @@ class LeaveRepository {
                       start_date AS "startDate", 
                       end_date AS "endDate", 
                       reason, 
-                      status
+                      status,
+                      comment
         `;
         const result = await query(sql, [updateData.employeeName, updateData.startDate, updateData.endDate, updateData.reason, id]);
         return result.rows[0];

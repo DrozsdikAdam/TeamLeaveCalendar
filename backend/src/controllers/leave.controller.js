@@ -46,7 +46,7 @@ class LeaveController {
     }
     async rejectLeave(req, res) {
         try {
-            const leave = await leaveService.rejectLeave(req.params.id);
+            const leave = await leaveService.rejectLeave(req.params.id, req.body.comment);
             res.json(leave);
         } catch (error) {
             res.status(500).json({ error: error.message });
@@ -54,7 +54,7 @@ class LeaveController {
     }
     async approveLeave(req, res) {
         try {
-            const leave = await leaveService.approveLeave(req.params.id);
+            const leave = await leaveService.approveLeave(req.params.id, req.body.comment);
             res.json(leave);
         } catch (error) {
             res.status(500).json({ error: error.message });

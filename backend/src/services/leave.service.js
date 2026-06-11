@@ -96,16 +96,16 @@ class LeaveService {
         };
     }
 
-    async rejectLeave(id) {
+    async rejectLeave(id, comment) {
         const leave = await this.getLeaveById(id);
         this.existAndStatusCheck(leave);
-        return leaveRepository.rejectLeave(id);
+        return leaveRepository.rejectLeave(id, comment);
     }
 
-    async approveLeave(id) {
+    async approveLeave(id, comment) {
         const leave = await this.getLeaveById(id);
         this.existAndStatusCheck(leave);
-        return leaveRepository.approveLeave(id);
+        return leaveRepository.approveLeave(id, comment);
     }
 
     async findOverlapping(employeeName, startDate, endDate, excludeId = null) {
@@ -141,6 +141,11 @@ class LeaveService {
         const end = new Date(leave.endDate);
         if (isNaN(start.getTime()) || isNaN(end.getTime())) {
             throw new Error("Érvénytelen dátum formátum.");
+        }
+        const startYear = start.getFullYear();
+        const endYear = end.getFullYear();
+        if (startYear < 2000 || startYear > 2100 || endYear < 2000 || endYear > 2100) {
+            throw new Error("A dátum évének 2000 és 2100 között kell lennie.");
         }
         if (start > end) {
             throw new Error("A kezdő dátumnak kisebbnek vagy egyenlőnek kell lennie a befejező dátumnál.");

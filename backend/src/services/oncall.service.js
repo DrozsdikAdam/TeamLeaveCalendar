@@ -48,7 +48,7 @@ class OncallService {
             const targetWeek = this.getWeekNumber(weekStart);
             const employee = this.getEmployeeForTheWeek(targetWeek, rotation);
 
-            const hasConflict = leaves.some(leave => {
+            const conflictingLeaves = leaves.filter(leave => {
                 if (leave.employeeName !== employee) return false;
 
                 const leaveStart = new Date(leave.startDate);
@@ -60,7 +60,12 @@ class OncallService {
             schedule.push({
                 week: targetWeek,
                 employee: employee,
-                hasConflict: hasConflict
+                hasConflict: conflictingLeaves.length > 0,
+                conflicts: conflictingLeaves.map(leave => ({
+                    startDate: leave.startDate,
+                    endDate: leave.endDate,
+                    reason: leave.reason
+                }))
             });
         }
         return schedule;

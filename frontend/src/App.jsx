@@ -37,12 +37,12 @@ export default function App() {
     fetchData();
   }, []);
 
-  const handleStatusChange = async (id, newStatus) => {
+  const handleStatusChange = async (id, newStatus, comment) => {
     try {
       if (newStatus === 'Approved') {
-        await apiClient.approveLeave(id);
+        await apiClient.approveLeave(id, comment);
       } else {
-        await apiClient.rejectLeave(id);
+        await apiClient.rejectLeave(id, comment);
       }
       fetchData();
     } catch (err) {
