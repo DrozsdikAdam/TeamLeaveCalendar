@@ -26,7 +26,8 @@ A responsive web application for managing team leave requests and tracking on-ca
 The easiest way to run the entire stack (Database, API, Frontend). Run this single command in the project root to clean up any cached volumes and start the app:
 
 ```bash
-docker-compose down --volumes --remove-orphans && docker-compose up --build
+docker-compose down --volumes --remove-orphans
+docker-compose up --build
 ```
  ## Once the containers are running:
    - **Frontend App:** http://localhost:3000
