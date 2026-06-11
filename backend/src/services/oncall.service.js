@@ -1,4 +1,5 @@
 import oncallRepository from "../repositories/oncall.repository.js";
+import userRepository from "../repositories/user.repository.js";
 
 class OncallService {
     getWeekNumber(date) {
@@ -8,8 +9,10 @@ class OncallService {
         return Math.ceil((daysDiff + 1) / 7);
     }
 
-    getEmployeeForTheWeek(weekNumber) {
-        const rotation = ['Alice', 'Bob', 'Charlie', 'Diana'];
+    getEmployeeForTheWeek(weekNumber, rotation) {
+        if (!rotation || rotation.length === 0) {
+            return "Nincs beosztott";
+        }
         const index = (weekNumber - 1) % rotation.length;
         return rotation[index >= 0 ? index : 0];
     }
@@ -25,6 +28,8 @@ class OncallService {
 
     async getUpcomingSchedule() {
         const leaves = await oncallRepository.findApprovedLeaves();
+        const users = await userRepository.findAll();
+        const rotation = users.sort((a, b) => a.id - b.id).map(u => u.name);
 
         const today = new Date();
         const mondayOfCurrentWeek = this.getMonday(today);
@@ -33,23 +38,23 @@ class OncallService {
         const schedule = [];
 
         for (let i = 0; i < numberOfWeeksForward; i++) {
-            const week_start = new Date(mondayOfCurrentWeek);
-            week_start.setDate(mondayOfCurrentWeek.getDate() + i * 7);
+            const weekStart = new Date(mondayOfCurrentWeek);
+            weekStart.setDate(mondayOfCurrentWeek.getDate() + i * 7);
 
-            const week_end = new Date(week_start);
-            week_end.setDate(week_start.getDate() + 6);
-            week_end.setHours(23, 59, 59, 999);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
 
-            const targetWeek = this.getWeekNumber(week_start);
-            const employee = this.getEmployeeForTheWeek(targetWeek);
+            const targetWeek = this.getWeekNumber(weekStart);
+            const employee = this.getEmployeeForTheWeek(targetWeek, rotation);
 
             const hasConflict = leaves.some(leave => {
-                if (leave.employee_name !== employee) return false;
+                if (leave.employeeName !== employee) return false;
 
-                const leave_start = new Date(leave.start_date);
-                const leave_end = new Date(leave.end_date);
+                const leaveStart = new Date(leave.startDate);
+                const leaveEnd = new Date(leave.endDate);
 
-                return leave_start <= week_end && leave_end >= week_start;
+                return leaveStart <= weekEnd && leaveEnd >= weekStart;
             });
 
             schedule.push({

@@ -12,36 +12,36 @@ class LeaveService {
     async createLeave(leave) {
         this.validateLeave(leave);
 
-        const overlapping_leaves = await this.findOverlapping(
-            leave.employee_name,
-            leave.start_date,
-            leave.end_date
+        const overlappingLeaves = await this.findOverlapping(
+            leave.employeeName,
+            leave.startDate,
+            leave.endDate
         );
 
-        if (overlapping_leaves.length > 0) {
+        if (overlappingLeaves.length > 0) {
             throw new Error("Van már overlapping időszakod!");
         }
 
         let warningMessage = "";
         const overlappingWithOthers = await leaveRepository.findOverlappingWithOthers(
-            leave.employee_name,
-            leave.start_date,
-            leave.end_date
+            leave.employeeName,
+            leave.startDate,
+            leave.endDate
         );
 
         if (overlappingWithOthers.length > 0) {
             warningMessage = "Ez a kérés átfedésben van más csapattagok kéréseivel!";
         }
 
-        const created_leave = await leaveRepository.createLeave({
-            employee_name: leave.employee_name,
-            start_date: leave.start_date,
-            end_date: leave.end_date,
+        const createdLeave = await leaveRepository.createLeave({
+            employeeName: leave.employeeName,
+            startDate: leave.startDate,
+            endDate: leave.endDate,
             reason: leave.reason
         });
 
         return {
-            ...created_leave,
+            ...createdLeave,
             warning: warningMessage
         };
     }
@@ -54,32 +54,44 @@ class LeaveService {
         return leaveRepository.deleteLeave(id);
     }
 
-    async updateLeave(id, update_data) {
+    async updateLeave(id, updateData) {
         const leave = await this.getLeaveById(id);
         this.existAndStatusCheck(leave);
 
-        this.validateLeave(update_data);
+        this.validateLeave(updateData);
+
+        const overlappingLeaves = await this.findOverlapping(
+            updateData.employeeName,
+            updateData.startDate,
+            updateData.endDate,
+            id
+        );
+
+        if (overlappingLeaves.length > 0) {
+            throw new Error("Van már overlapping időszakod!");
+        }
 
         let warningMessage = "";
         const overlappingWithOthers = await leaveRepository.findOverlappingWithOthers(
-            update_data.employee_name,
-            update_data.start_date,
-            update_data.end_date
+            updateData.employeeName,
+            updateData.startDate,
+            updateData.endDate,
+            id
         );
 
         if (overlappingWithOthers.length > 0) {
             warningMessage = "Ez a kérés átfedésben van más csapattagok kéréseivel!";
         }
 
-        const updated_leave = await leaveRepository.updateLeave(id, {
-            employee_name: update_data.employee_name,
-            start_date: update_data.start_date,
-            end_date: update_data.end_date,
-            reason: update_data.reason
+        const updatedLeave = await leaveRepository.updateLeave(id, {
+            employeeName: updateData.employeeName,
+            startDate: updateData.startDate,
+            endDate: updateData.endDate,
+            reason: updateData.reason
         });
 
         return {
-            ...updated_leave,
+            ...updatedLeave,
             warning: warningMessage
         };
     }
@@ -96,8 +108,8 @@ class LeaveService {
         return leaveRepository.approveLeave(id);
     }
 
-    async findOverlapping(employee_name, start_date, end_date) {
-        return leaveRepository.findOverlapping(employee_name, start_date, end_date);
+    async findOverlapping(employeeName, startDate, endDate, excludeId = null) {
+        return leaveRepository.findOverlapping(employeeName, startDate, endDate, excludeId);
     }
 
     existAndStatusCheck(leave) {
@@ -113,19 +125,24 @@ class LeaveService {
         if (!leave) {
             throw new Error("Szabadság adatok nem találhatók.");
         }
-        if (!leave.employee_name) {
+        if (!leave.employeeName) {
             throw new Error("Hiányzik a csapattag neve");
         }
-        if (!leave.start_date) {
+        if (!leave.startDate) {
             throw new Error("Hiányzik a kezdő dátum");
         }
-        if (!leave.end_date) {
+        if (!leave.endDate) {
             throw new Error("Hiányzik a befejező dátum");
         }
         if (!leave.reason) {
             throw new Error("Hiányzik az ok");
         }
-        if (new Date(leave.start_date) > new Date(leave.end_date)) {
+        const start = new Date(leave.startDate);
+        const end = new Date(leave.endDate);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            throw new Error("Érvénytelen dátum formátum.");
+        }
+        if (start > end) {
             throw new Error("A kezdő dátumnak kisebbnek vagy egyenlőnek kell lennie a befejező dátumnál.");
         }
     }
