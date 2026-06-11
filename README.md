@@ -226,6 +226,8 @@ All API endpoints expect and return JSON payloads. Date parameters should be for
     ]
     ```
 
+---
+
 ## Future Improvements & Roadmap
 While the core functionality of the application is fully implemented, the codebase was structured to easily accommodate the following production-ready enhancements:
 
