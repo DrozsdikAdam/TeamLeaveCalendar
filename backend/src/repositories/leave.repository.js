@@ -21,6 +21,16 @@ class LeaveRepository {
         const result = await query(sql, [employee_name, start_date, end_date]);
         return result.rows;
     }
+    async findOverlappingWithOthers(employee_name, start_date, end_date) {
+        const sql = `
+            SELECT * FROM leave_requests 
+            WHERE employee_name != $1 
+            AND status IN ('Approved', 'Pending')
+            AND (start_date <= $3 AND end_date >= $2)
+        `;
+        const result = await query(sql, [employee_name, start_date, end_date]);
+        return result.rows;
+    }
     async createLeave(leave) {
         const sql = `INSERT INTO leave_requests (employee_name, start_date, end_date, reason) 
         VALUES ($1, $2, $3, $4) RETURNING *`;

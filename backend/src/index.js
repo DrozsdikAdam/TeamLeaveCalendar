@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import userRouter from "./routes/user.routes.js"
 import leaveRouter from "./routes/leave.routes.js"
+import oncallRouter from "./routes/oncall.routes.js";
 
 const app = express();
 const port = process.env.port || 5000;
@@ -16,6 +17,8 @@ app.get("/api/health", (req, res) => {
 app.use("/api/users", userRouter)
 
 app.use("/api/leaves", leaveRouter)
+
+app.use("/api/oncalls", oncallRouter);
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`)

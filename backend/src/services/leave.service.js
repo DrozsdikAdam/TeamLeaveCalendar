@@ -22,12 +22,28 @@ class LeaveService {
             throw new Error("Van már overlapping időszakod!");
         }
 
-        return leaveRepository.createLeave({
+        let warningMessage = "";
+        const overlappingWithOthers = await leaveRepository.findOverlappingWithOthers(
+            leave.employee_name,
+            leave.start_date,
+            leave.end_date
+        );
+
+        if (overlappingWithOthers.length > 0) {
+            warningMessage = "Ez a kérés átfedésben van más csapattagok kéréseivel!";
+        }
+
+        const created_leave = await leaveRepository.createLeave({
             employee_name: leave.employee_name,
             start_date: leave.start_date,
             end_date: leave.end_date,
             reason: leave.reason
         });
+
+        return {
+            ...created_leave,
+            warning: warningMessage
+        };
     }
 
     async deleteLeave(id) {
@@ -40,42 +56,43 @@ class LeaveService {
 
     async updateLeave(id, update_data) {
         const leave = await this.getLeaveById(id);
-        if (!leave) {
-            throw new Error("Szabadság nem található.");
-        }
-        if (leave.status !== "Pending") {
-            throw new Error("A kérést már feldolgozták.");
-        }
+        this.existAndStatusCheck(leave);
 
         this.validateLeave(update_data);
 
-        return leaveRepository.updateLeave(id, {
+        let warningMessage = "";
+        const overlappingWithOthers = await leaveRepository.findOverlappingWithOthers(
+            update_data.employee_name,
+            update_data.start_date,
+            update_data.end_date
+        );
+
+        if (overlappingWithOthers.length > 0) {
+            warningMessage = "Ez a kérés átfedésben van más csapattagok kéréseivel!";
+        }
+
+        const updated_leave = await leaveRepository.updateLeave(id, {
             employee_name: update_data.employee_name,
             start_date: update_data.start_date,
             end_date: update_data.end_date,
             reason: update_data.reason
         });
+
+        return {
+            ...updated_leave,
+            warning: warningMessage
+        };
     }
 
     async rejectLeave(id) {
         const leave = await this.getLeaveById(id);
-        if (!leave) {
-            throw new Error("Szabadság nem található.");
-        }
-        if (leave.status !== "Pending") {
-            throw new Error("A kérést már feldolgozták.");
-        }
+        this.existAndStatusCheck(leave);
         return leaveRepository.rejectLeave(id);
     }
 
     async approveLeave(id) {
         const leave = await this.getLeaveById(id);
-        if (!leave) {
-            throw new Error("Szabadság nem található.");
-        }
-        if (leave.status !== "Pending") {
-            throw new Error("A kérést már feldolgozták.");
-        }
+        this.existAndStatusCheck(leave);
         return leaveRepository.approveLeave(id);
     }
 
@@ -83,11 +100,19 @@ class LeaveService {
         return leaveRepository.findOverlapping(employee_name, start_date, end_date);
     }
 
+    existAndStatusCheck(leave) {
+        if (!leave) {
+            throw new Error("Szabadság nem található.");
+        }
+        if (leave.status !== "Pending") {
+            throw new Error("A kérést már feldolgozták.");
+        }
+    }
+
     validateLeave(leave) {
         if (!leave) {
             throw new Error("Szabadság adatok nem találhatók.");
         }
-
         if (!leave.employee_name) {
             throw new Error("Hiányzik a csapattag neve");
         }
