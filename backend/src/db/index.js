@@ -11,4 +11,8 @@ const pool = new Pool({
     port: 5432,
 })
 
+pool.on('error', (err) => {
+    console.error('Váratlan hiba az adatbázis pool idle kliensén:', err.message);
+});
+
 export const query = (text, params) => pool.query(text, params)
